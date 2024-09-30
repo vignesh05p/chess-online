@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Chess Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #chessboard {
+            display: grid;
+            grid-template-columns: repeat(8, 50px);
+            grid-template-rows: repeat(8, 50px);
+            border: 2px solid #333;
+        }
+        .square {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            cursor: pointer;
+        }
+        .white {
+            background-color: #f0d9b5;
+        }
+        .black {
+            background-color: #b58863;
+        }
+        .piece {
+            transition: all 0.3s ease;
+        }
+        .selected {
+            background-color: #7fff00;
+        }
+    </style>
+</head>
+<body>
+    <div id="chessboard"></div>
+
+    <script>
+        const board = document.getElementById('chessboard');
+        let selectedPiece = null;
+        let currentPlayer = 'white';
+
+        const initialBoard = [
+            ['♜', '♞', '♝', '♛', '♚', '♝', '♞', '♜'],
+            ['♟', '♟', '♟', '♟', '♟', '♟', '♟', '♟'],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['♙', '♙', '♙', '♙', '♙', '♙', '♙', '♙'],
+            ['♖', '♘', '♗', '♕', '♔', '♗', '♘', '♖']
+        ];
+
+        function createBoard() {
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const square = document.createElement('div');
+                    square.classList.add('square');
+                    square.classList.add((row + col) % 2 === 0 ? 'white' : 'black');
+                    square.dataset.row = row;
+                    square.dataset.col = col;
+                    square.addEventListener('click', handleClick);
+                    board.appendChild(square);
+                }
+            }
+            updateBoard();
+        }
+
+        function updateBoard() {
+            const squares = document.querySelectorAll('.square');
+            squares.forEach((square, index) => {
+                const row = Math.floor(index / 8);
+                const col = index % 8;
+                square.innerHTML = `<span class="piece">${initialBoard[row][col]}</span>`;
+            });
+        }
+
+        function handleClick(event) {
+            const square = event.target.closest('.square');
+            const row = parseInt(square.dataset.row);
+            const col = parseInt(square.dataset.col);
+
+            if (selectedPiece) {
+                movePiece(selectedPiece, row, col);
+                selectedPiece = null;
+                document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+            } else {
+                const piece = initialBoard[row][col];
+                if (piece && ((currentPlayer === 'white' && piece.charCodeAt(0) >= 9812 && piece.charCodeAt(0) <= 9817) ||
+                              (currentPlayer === 'black' && piece.charCodeAt(0) >= 9818 && piece.charCodeAt(0) <= 9823))) {
+                    selectedPiece = { row, col };
+                    square.classList.add('selected');
+                }
+            }
+        }
+
+        function movePiece(from, toRow, toCol) {
+            const piece = initialBoard[from.row][from.col];
+            initialBoard[from.row][from.col] = '';
+            initialBoard[toRow][toCol] = piece;
+            updateBoard();
+            currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
+            if (currentPlayer === 'black') {
+                setTimeout(computerMove, 500);
+            }
+        }
+
+        function computerMove() {
+            const moves = getAllPossibleMoves('black');
+            if (moves.length > 0) {
+                const move = moves[Math.floor(Math.random() * moves.length)];
+                movePiece(move.from, move.to.row, move.to.col);
+            }
+        }
+
+        function getAllPossibleMoves(player) {
+            const moves = [];
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const piece = initialBoard[row][col];
+                    if ((player === 'black' && piece.charCodeAt(0) >= 9818 && piece.charCodeAt(0) <= 9823) ||
+                        (player === 'white' && piece.charCodeAt(0) >= 9812 && piece.charCodeAt(0) <= 9817)) {
+                        const pieceMoves = getPossibleMovesForPiece(row, col);
+                        moves.push(...pieceMoves.map(to => ({ from: { row, col }, to })));
+                    }
+                }
+            }
+            return moves;
+        }
+
+        function getPossibleMovesForPiece(row, col) {
+            const piece = initialBoard[row][col];
+            const moves = [];
+
+            // Simple move generation for pawns only
+            if (piece === '♙' || piece === '♟') {
+                const direction = piece === '♙' ? -1 : 1;
+                if (row + direction >= 0 && row + direction < 8 && !initialBoard[row + direction][col]) {
+                    moves.push({ row: row + direction, col });
+                }
+            }
+
+            return moves;
+        }
+
+        createBoard();
+    </script>
+</body>
+</html>
